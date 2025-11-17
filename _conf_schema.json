@@ -1,0 +1,20 @@
+{
+  "mcsm_url": {
+    "description": "MCSManager 面板地址(必填)",
+    "type": "string",
+    "hint": "例如: http://127.0.0.1:23333,不要带/",
+    "obvious_hint": true
+  },
+  "api_key": {
+    "description": "API Key",
+    "type": "string",
+    "hint": "用管理员API Key，不会获取的看文档",
+    "obvious_hint": true
+  },
+  "authorized_users": {
+    "description": "授权用户列表（uid）",
+    "type": "list",
+    "hint": "被授权使用命令的用户ID列表",
+    "default": []
+  }
+}
