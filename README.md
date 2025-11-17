@@ -7,7 +7,7 @@ _✨ AstrBot 一个可以管理mcsm的小插件 ✨_
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![AstrBot](https://img.shields.io/badge/AstrBot-3.4%2B-orange.svg)](https://github.com/Soulter/AstrBot)
 [![MCSM](https://img.shields.io/badge/MCSM-9.7.0-blue.svg)](https://github.com/MCSManager/MCSManager)
-
+</div>
 ## 介绍
 主要功能:
 - 通过指令开/关mcsm实例
