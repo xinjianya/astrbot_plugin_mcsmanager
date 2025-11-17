@@ -37,6 +37,7 @@ APIkey需要从
 <img width="1867" height="895" alt="屏幕截图 2025-11-17 175417" src="https://github.com/user-attachments/assets/786c3495-efad-4938-8506-ddf3f23296fb" />
 <img width="1867" height="890" alt="image" src="https://github.com/user-attachments/assets/f64221b9-fe76-476b-ab09-438ff14d1d47" />
 获取
+
 ### 指令介绍
 - 显示帮助信息 mcsm-help
 - 授权用户 mcsm-auth
