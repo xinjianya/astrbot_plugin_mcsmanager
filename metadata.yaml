@@ -1,6 +1,7 @@
 name: MCSManager服务器管理插件
 author: 5060ti个马力的2099
 desc: 可以通过指令管理mcsmanager内实例的插件:主要功能:通过指令开/关mcsm实例，mcsm节点状态（内存，cpu占用），查看实例列表
-version: 2.0.25.WNMCNXM
+version: 2.0.25.12.WNMCNXM
 repo_url: https://github.com/HSOS6/astrbot_plugin_mcsmanager
+
 
