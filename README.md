@@ -59,8 +59,14 @@ APIkey需要从
 - [基于xinghanxu_astrbot_for_mcsmanager制作](https://github.com/xinghanxu666/xinghanxu_astrbot_for_mcsmanager)
 - [MCSManager](https://docs.mcsmanager.com/)
 
-## 更新日志
-12.18：修复cmd命令空格不识别问题
-如/mcsm cmd id text1 text2只发送text1
+---
 
-12.15：修复了大部分问题，修改授权指令
+## 更新日志
+### 12.18：修复cmd命令空格不识别问题
+如/mcsm cmd id text1 text2只发送text1
+### 12.15：修复了大部分问题，更新了很多东西
+之前说想改又忘记了
+已修复的主要问题：
+1. 授权问题（？）
+2. cmd命令出错
+3. 以及大大小小的bug
