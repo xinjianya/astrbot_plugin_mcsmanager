@@ -16,8 +16,9 @@ _✨ AstrBot 一个可以管理mcsm的小插件 ✨_
 主要功能:
 - 通过指令开/关实例
 - 通过mcsm cmd指令操作实例
-- mcsm节点状态（内存，cpu占用）
+- 查看mcsm节点状态（内存，cpu占用）
 - 查看实例列表
+- 查看实例最近日志
 
 ## 📦 安装
 ### 方式一：从插件市场安装
@@ -33,6 +34,7 @@ git clone https://github.com/your-repo/permission-manager.git
 或者从[此页面](https://github.com/HSOS6/astrbot_plugin_mcsmanager/archive/refs/heads/main.zip)下载，通过从文件安装此插件
 
 ## 使用说明
+### 注意：插件重启/重载后需要使用mcsm list命令后才可使用start/stop/cmd命令！
 ### 插件配置：
 <img width="1866" height="893" alt="image" src="https://github.com/user-attachments/assets/a79bdc26-c081-4994-9d62-5656d6493cce" />
 所有可选框均为必填配置！
@@ -62,8 +64,9 @@ APIkey需要从
 ---
 
 ## 更新日志
-### 12.18：修复cmd命令空格不识别问题
-如/mcsm cmd id text1 text2只发送text1
+### 12.18：修复cmd命令空格不识别问题，新增mcsm log命令
+问题介绍：如/mcsm cmd id text1 text2只发送text1
+新增命令：读取条数可以在插件配置自定义
 ### 12.15：修复了大部分问题，更新了很多东西
 之前说想改又忘记了
 已修复的主要问题：
