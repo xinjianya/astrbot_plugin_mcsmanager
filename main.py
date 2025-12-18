@@ -51,7 +51,7 @@ def format_uptime_seconds(seconds: float) -> str:
     return "".join(parts[:2]) if len(parts) > 1 else "".join(parts)
 
 
-@register("MCSManager", "5060的3600马力", "MCSManager服务器管理插件", "2.0.25.WNMCNXM") 
+@register("MCSManager", "5060的3600马力", "MCSManager服务器管理插件", "2.0.25.12.WNMCNXM") 
 class MCSMPlugin(Star):
     def __init__(self, context: Context, config: dict):
         super().__init__(context)
@@ -75,9 +75,6 @@ class MCSMPlugin(Star):
     def _extract_user_id(self, raw_id: str) -> str:
         """
         从 CQ 码、自定义 At 格式或纯字符串中提取用户 ID
-        例如: "[CQ:at,qq=3848468559]" -> "3848468559"
-              "[At:3848468559]" -> "3848468559"
-              "@昵称(3848468559)" -> "3848468559"
         """
         raw_id = raw_id.strip()
         
@@ -498,11 +495,25 @@ class MCSMPlugin(Star):
         yield event.plain_result(f"✅ {instance_name} 停止命令已发送")
 
     @filter.command("mcsm cmd")
-    async def mcsm_cmd(self, event: AstrMessageEvent, identifier: str, command: str):
+    async def mcsm_cmd(self, event: AstrMessageEvent, identifier: str):
         """发送命令 (支持名称/编号/UUID)"""
         if not self.is_admin_or_authorized(event):
             yield event.plain_result("❌ 权限不足")
             return
+
+        # --- 修复核心：手动解析带空格的命令 ---
+        # event.message_str 是用户发送的原始消息，例如 "/mcsm cmd 1 CC 1 1"
+        raw_msg = event.message_str.strip()
+        # 匹配模式：指令 前缀 标识符 (命令内容)
+        # 假设指令固定为 /mcsm cmd [标识符] [内容]
+        parts = raw_msg.split(maxsplit=3)
+        
+        if len(parts) < 4:
+            yield event.plain_result("⚠️ 参数不足。用法: /mcsm cmd [名称/编号] [命令内容]")
+            return
+        
+        # parts[0]=/mcsm, parts[1]=cmd, parts[2]=identifier, parts[3]=命令内容
+        full_command = parts[3].strip()
 
         # Lookup instance by identifier
         ids = self._get_instance_by_identifier(identifier)
@@ -526,7 +537,7 @@ class MCSMPlugin(Star):
         except Exception:
             pass # Use identifier if lookup fails
         
-        yield event.plain_result(f"📢 正在向 {instance_name} 发送命令: {command}")
+        yield event.plain_result(f"📢 正在向 {instance_name} 发送命令: {full_command}")
 
         cmd_resp = await self.make_mcsm_request(
             "/protected_instance/command",
@@ -534,7 +545,7 @@ class MCSMPlugin(Star):
             params={
                 "uuid": instance_id,
                 "daemonId": daemon_id,
-                "command": command
+                "command": full_command
             }
         )
 
@@ -646,14 +657,14 @@ class MCSMPlugin(Star):
 
 
                 status_text += (
-                    f"🖥️ 节点: {node_name}\n"
-                    f"- 状态: {'🟢 在线' if node.get('available') else '🔴 离线'}\n"
-                    f"- 节点版本: {node_version}\n"
-                    f"- OS 版本: {os_version}\n"
-                    f"- CPU 占用: {node_cpu_percent}\n"
-                    f"- 内存占用: {mem_used_formatted} / {mem_total_formatted}\n"
-                    f"- 实例数量: {inst_running} 运行中 / {inst_total} 总数\n"
-                    "----------------------\n"
+                    f"🖥️ 节点: {node_name}\\n"
+                    f"- 状态: {'🟢 在线' if node.get('available') else '🔴 离线'}\\n"
+                    f"- 节点版本: {node_version}\\n"
+                    f"- OS 版本: {os_version}\\n"
+                    f"- CPU 占用: {node_cpu_percent}\\n"
+                    f"- 内存占用: {mem_used_formatted} / {mem_total_formatted}\\n"
+                    f"- 实例数量: {inst_running} 运行中 / {inst_total} 总数\\n"
+                    "----------------------\\n"
                 )
 
         status_text += (
