@@ -51,7 +51,7 @@ def format_uptime_seconds(seconds: float) -> str:
     return "".join(parts[:2]) if len(parts) > 1 else "".join(parts)
 
 
-@register("MCSManager", "5060的3600马力", "MCSManager服务器管理插件", "2.0.25.12.WNMCNXM") 
+@register("MCSManager", "5060的3600马力", "MCSManager服务器管理插件", "2.0.25.12WNMCNXM") 
 class MCSMPlugin(Star):
     def __init__(self, context: Context, config: dict):
         super().__init__(context)
@@ -65,12 +65,12 @@ class MCSMPlugin(Star):
             "uuid_to_id": {}, # UUID -> (daemon_id, uuid) 映射
             "ambiguous_names": set(), # 存储所有重名实例的名称
         }
-        logger.info("MCSM插件(v10)初始化完成！")
+        logger.info("MCSM插件(v10)初始化完成喵~出现问题及时提issue！")
 
     async def terminate(self):
         """插件卸载时关闭HTTP客户端"""
         await self.http_client.aclose()
-        logger.info("MCSM插件已卸载！欢迎下次使用（有问题发issue谢谢喵）")
+        logger.info("MCSM插件已卸载")
 
     def _extract_user_id(self, raw_id: str) -> str:
         """
@@ -197,18 +197,19 @@ class MCSMPlugin(Star):
             
         help_text = """
 🛠️ MCSM面板 管理指令：
-/mcsm help - 显示帮助
+/mcsm help - 显示此帮助
 /mcsm status - 面板状态概览
 /mcsm list - 节点实例列表 (按名称A-Z排序，提供编号)
 
---- 实例操作 (支持 名称/编号/UUID) ---
-/mcsm start [identifier] - 启动实例
-/mcsm stop [identifier] - 停止实例
-/mcsm cmd [identifier] [command] - 发送命令
+> 实例操作 (支持 名称/编号/UUID) ---
+/mcsm start [实例] - 启动实例
+/mcsm stop [实例] - 停止实例
+/mcsm cmd [实例] [命令] - 发送命令
+/mcsm log [实例] - 查看最近日志
 
---- 权限管理 (仅管理员) ---
+> 权限管理 (仅管理员)
 /mcsm op - 授权用户
-/mcsm deop - 取消授权
+/mcsm deop - 取消用户授权
 """
         yield event.plain_result(help_text)
 
@@ -501,11 +502,7 @@ class MCSMPlugin(Star):
             yield event.plain_result("❌ 权限不足")
             return
 
-        # --- 修复核心：手动解析带空格的命令 ---
-        # event.message_str 是用户发送的原始消息，例如 "/mcsm cmd 1 CC 1 1"
         raw_msg = event.message_str.strip()
-        # 匹配模式：指令 前缀 标识符 (命令内容)
-        # 假设指令固定为 /mcsm cmd [标识符] [内容]
         parts = raw_msg.split(maxsplit=3)
         
         if len(parts) < 4:
@@ -574,6 +571,55 @@ class MCSMPlugin(Star):
 
         yield event.plain_result(f"✅ 命令已发送\n📝 最近日志:\n{output}")
 
+    @filter.command("mcsm log")
+    async def mcsm_log(self, event: AstrMessageEvent, identifier: str):
+        """查看最近日志 (支持名称/编号/UUID)"""
+        if not self.is_admin_or_authorized(event):
+            yield event.plain_result("❌ 权限不足")
+            return
+
+        ids = self._get_instance_by_identifier(identifier)
+        if not ids:
+            if identifier in self.instance_data.get("ambiguous_names", set()):
+                 yield event.plain_result(f"❌ 获取失败: 实例名称 '{identifier}' 重复。请使用 编号/UUID。")
+            else:
+                 yield event.plain_result(f"❌ 找不到实例: {identifier}。")
+            return
+        
+        daemon_id, instance_id = ids
+        
+        log_size = self.config.get("log_size")
+
+        yield event.plain_result(f"📄 正在获取 {identifier} 的最近 {log_size} 条日志...")
+
+        output_resp = await self.make_mcsm_request(
+            "/protected_instance/outputlog",
+            method="GET",
+            params={"uuid": instance_id, "daemonId": daemon_id}
+        )
+
+        if output_resp.get("status") != 200:
+            err = output_resp.get("error") or "未知错误"
+            yield event.plain_result(f"❌ 获取日志失败: {err}")
+            return
+
+        log_data = output_resp.get("data", "")
+        if not log_data:
+            yield event.plain_result("📝 该实例当前没有最新日志。")
+            return
+
+        # 处理日志行数
+        lines = log_data.strip().split('\n')
+        if len(lines) > log_size:
+            lines = lines[-log_size:]
+        
+        formatted_log = "\n".join(lines)
+        
+        # 长度防爆（可自行调整）
+        if len(formatted_log) > 15000:
+            formatted_log = "..." + formatted_log[-15000:]
+
+        yield event.plain_result(f"📝 最近日志 ({len(lines)} 条):\n{formatted_log}")
 
     @filter.command("mcsm status")
     async def mcsm_status(self, event: AstrMessageEvent):
@@ -605,12 +651,11 @@ class MCSMPlugin(Star):
         
         mcsm_version = data.get("version", "未知版本")
         
-        # --- 1. 提取并格式化根层级的 time 字段 (数据时间点) （不知道为什么读不了节点的时间）
+        # --- 1. 提取并格式化根层级的 time 字段 (数据时间点)
         panel_timestamp_ms = overview_resp.get("time")
         panel_time_formatted = "未知时间"
         if panel_timestamp_ms and isinstance(panel_timestamp_ms, (int, float)):
             try:
-                # 将毫秒转换为秒，并格式化为可读的日期时间
                 dt_object = datetime.datetime.fromtimestamp(panel_timestamp_ms / 1000.0)
                 panel_time_formatted = dt_object.strftime("%Y-%m-%d %H:%M:%S")
             except ValueError:
@@ -657,20 +702,20 @@ class MCSMPlugin(Star):
 
 
                 status_text += (
-                    f"🖥️ 节点: {node_name}\\n"
-                    f"- 状态: {'🟢 在线' if node.get('available') else '🔴 离线'}\\n"
-                    f"- 节点版本: {node_version}\\n"
-                    f"- OS 版本: {os_version}\\n"
-                    f"- CPU 占用: {node_cpu_percent}\\n"
-                    f"- 内存占用: {mem_used_formatted} / {mem_total_formatted}\\n"
-                    f"- 实例数量: {inst_running} 运行中 / {inst_total} 总数\\n"
-                    "----------------------\\n"
+                    f"🖥️ 节点: {node_name}\n"
+                    f"- 状态: {'🟢 在线' if node.get('available') else '🔴 离线'}\n"
+                    f"- 节点版本: {node_version}\n"
+                    f"- OS 版本: {os_version}\n"
+                    f"- CPU 占用: {node_cpu_percent}\n"
+                    f"- 内存占用: {mem_used_formatted} / {mem_total_formatted}\n"
+                    f"- 实例数量: {inst_running} 运行中 / {inst_total} 总数\n"
+                    "----------------------\n"
                 )
 
         status_text += (
             f"- 在线时间: {os_uptime_formatted}\n" 
             f"总节点状态: {r_avail} 在线 / {r_total} 总数\n"
-            f"总实例运行中: {running_instances} / {total_instances}\n"
+            f"实例运行状态: {running_instances} / {total_instances}\n"
             f"提示: 使用 /mcsm list 查看详情"
         )
 
