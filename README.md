@@ -27,7 +27,7 @@ _✨ AstrBot 一个可以管理mcsm的小插件 ✨_
 ```bash
 # 克隆仓库到插件目录
 cd /path/to/AstrBot/data/plugins
-git clone https://github.com/your-repo/permission-manager.git
+git clone https://github.com/HSOS6/astrbot_plugin_mcsmanager.git
 
 # 重启 AstrBot
 ```
